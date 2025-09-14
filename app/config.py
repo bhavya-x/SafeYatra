@@ -6,7 +6,7 @@ import os
 MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017/safe_yatra")
 
 # Google Maps API Key (set via environment variable in production)
-GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "AIzaSyDf34ue6DB4ukLmPqY09YJsZ4FXW_vs98Y")
+GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "")
 
 # JWT Secret Key for token generation (replace with secure value)
 JWT_SECRET = os.getenv("JWT_SECRET", "my_very_strong_secret_2803")
