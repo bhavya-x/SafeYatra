@@ -8,3 +8,4 @@ joblib
 requests
 pydantic[email]
 passlib[bcrypt]
+httpx
