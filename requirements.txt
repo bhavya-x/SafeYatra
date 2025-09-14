@@ -7,3 +7,4 @@ jwt
 joblib
 requests
 pydantic[email]
+passlib[bcrypt]
