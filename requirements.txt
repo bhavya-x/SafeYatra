@@ -1,1 +1,8 @@
-fastapi[all]
+fastapi
+uvicorn
+motor
+pydantic
+python-jose[cryptography]
+jwt
+joblib
+requests

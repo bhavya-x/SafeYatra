@@ -1,9 +1,10 @@
 services:
-  # A Docker web service
   - type: web
-    name: fastapi-example
-    runtime: python
-    plan: free
-    autoDeploy: false
+    name: safe-yatra-backend
+    env: python
+    plan: starter
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port 10000
+    envVars:
+      - key: MONGODB_URL
+        value: ${MONGODB_URL}  # Set this in Render dashboard
