@@ -6,3 +6,4 @@ python-jose[cryptography]
 jwt
 joblib
 requests
+pydantic[email]
