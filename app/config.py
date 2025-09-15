@@ -3,7 +3,7 @@
 import os
 
 # MongoDB connection URI (can be set via environment variable)
-MONGODB_URL = os.getenv("MONGODB_URL", "mongodb+srv://ishand694:mibhuf-5wohhi-hEnpim@ishan.hsv54.mongodb.net/?retryWrites=true&w=majority&appName=Ishan")
+MONGODB_URL = os.getenv("MONGODB_URL", "mongodb+srv://bhavyajain035:password1234@cluster0.qs1fe.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
 
 # Google Maps API Key (set via environment variable in production)
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "")
