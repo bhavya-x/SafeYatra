@@ -1,14 +1,13 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException
 from app.models.route import RouteRequest
 from app.services.route_service import get_safe_routes, get_nearest_emergency, send_sos_alert
-from app.services.auth_service import get_current_user
 
 router = APIRouter()
 
 @router.post("/routes/")
-async def safe_route_route(request: RouteRequest, current_user: dict = Depends(get_current_user)):
+async def safe_route_route(request: RouteRequest):
     """
-    Return top safe routes based on start, end, and travel mode. Requires authentication.
+    Return top safe routes based on start, end, and travel mode. No authentication required.
     """
     routes = await get_safe_routes(request)
     if not routes:
@@ -16,9 +15,9 @@ async def safe_route_route(request: RouteRequest, current_user: dict = Depends(g
     return routes
 
 @router.get("/emergency/nearest")
-async def nearest_emergency(lat: float, lng: float, current_user: dict = Depends(get_current_user)):
+async def nearest_emergency(lat: float, lng: float):
     """
-    Return the nearest emergency facility (police/hospital) for a given location. Requires authentication.
+    Return the nearest emergency facility (police/hospital) for a given location. No authentication required.
     """
     facility = await get_nearest_emergency(lat, lng)
     if not facility:
@@ -26,9 +25,9 @@ async def nearest_emergency(lat: float, lng: float, current_user: dict = Depends
     return facility
 
 @router.post("/sos/")
-async def sos_alert(details: dict, current_user: dict = Depends(get_current_user)):
+async def sos_alert(details: dict):
     """
-    Send SOS alert with live location, vehicle details to emergency contacts and police. Requires authentication.
+    Send SOS alert with live location, vehicle details to emergency contacts and police. No authentication required.
     """
     result = await send_sos_alert(details)
     return {"status": "SOS alert sent", "result": result}
