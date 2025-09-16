@@ -8,7 +8,7 @@ from app.config import GOOGLE_MAPS_API_KEY
 async def get_directions(start: str, end: str, mode=str, alternatives=True):
     """
     Call the Google Directions API to get route information.
-    Returns only the coordinates of the top route.
+    Returns the polyline string of the top route.
     """
     url = "https://maps.googleapis.com/maps/api/directions/json"
     params = {
@@ -16,7 +16,7 @@ async def get_directions(start: str, end: str, mode=str, alternatives=True):
         "destination": end,
         "mode": mode,
         "alternatives": alternatives,
-        "key": "AIzaSyDf34ue6DB4ukLmPqY09YJsZ4FXW_vs98Y"
+        "key": GOOGLE_MAPS_API_KEY
     }
     
     try:
@@ -28,17 +28,13 @@ async def get_directions(start: str, end: str, mode=str, alternatives=True):
             if data["status"] != "OK":
                 return {"error": data["status"]}
 
-            # Extract coordinates from the first route
+            # Extract polyline from the first route
             if data.get("routes"):
                 top_route = data["routes"][0]
-                coordinates = []
-                for leg in top_route.get("legs", []):
-                    for step in leg.get("steps", []):
-                        coordinates.append(step["end_location"])  # Collect end locations
+                polyline = top_route.get("overview_polyline", {}).get("points", "")
+                return polyline  # Return the polyline string
 
-                return coordinates  # Return only the coordinates
-
-            return []  # Return empty if no routes found
+            return ""  # Return empty if no routes found
 
         else:
             return {"error": "Failed to fetch directions"}
