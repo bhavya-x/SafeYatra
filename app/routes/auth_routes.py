@@ -20,7 +20,7 @@ async def login(user: User):
     """
     Authenticate user and return a JWT token.
     """
-    token = await login_user(user.username, user.password)
+    token = await login_user(user.email, user.password)
     return token
 
 @router.get("/profile")

@@ -20,28 +20,28 @@ async def register_user(user: User):
     result = await users_collection.insert_one(user.dict())
     return str(result.inserted_id)
 
-async def authenticate_user(username: str, password: str):
+async def authenticate_user(email: str, password: str):
     """
-    Authenticate user by verifying the username and password.
+    Authenticate user by verifying the email and password.
     """
     users_collection = await get_users_collection()
-    user = await users_collection.find_one({"username": username})
+    user = await users_collection.find_one({"email": email})
     
     if not user or not verify_password(password, user["password"]):
         return None  # Invalid credentials
 
     return user  # Return user data if authentication is successful
 
-async def login_user(username: str, password: str):
+async def login_user(email: str, password: str):
     """
     Authenticate user and generate JWT token.
     """
-    user = await authenticate_user(username, password)
+    user = await authenticate_user(email, password)
     if not user:
-        raise HTTPException(status_code=401, detail="Invalid username or password")
+        raise HTTPException(status_code=401, detail="Invalid email or password")
     
     # Generate JWT token with user data
-    token = create_access_token(data={"sub": user["email"], "username": user["username"]})
+    token = create_access_token(data={"sub": user["email"]})
     return {"access_token": token, "token_type": "bearer"}
 
 async def get_current_user(token: str):
@@ -52,4 +52,4 @@ async def get_current_user(token: str):
     if payload is None:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
     
-    return payload  # Returns decoded user data (e.g., email, username)
+    return payload  # Returns decoded user data (e.g., email)

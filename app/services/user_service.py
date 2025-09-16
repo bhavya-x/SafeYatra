@@ -16,6 +16,18 @@ async def register_user(user: User):
     result = await users_collection.insert_one(user.dict())
     return str(result.inserted_id)
 
+async def update_user(user_id: str, user_data: User):
+    """
+    Update user details in the database.
+    """
+    users_collection = await get_users_collection()
+    object_id = ObjectId(user_id)  # Convert string to ObjectId
+    update_result = await users_collection.update_one(
+        {"_id": object_id},
+        {"$set": user_data.dict(exclude_unset=True)}  # Update only provided fields
+    )
+    return update_result.modified_count > 0  # Return True if update was successful
+
 async def get_user_by_id(user_id: str):
     """
     Retrieve user details from the database by user_id.
