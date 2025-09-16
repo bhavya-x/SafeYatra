@@ -6,11 +6,22 @@ from app.routes.route_routes import router as route_router
 from app.database.mongo import get_users_collection, get_incidents_collection
 import motor.motor_asyncio
 from app.config import MONGODB_URL
+from fastapi.middleware.cors import CORSMiddleware
+
+
 
 app = FastAPI(
     title="Safe Yatra Backend",
     description="Backend for Safe Yatra, a safe routes recommendation system.",
     version="1.0.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins (Change this in production)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Include routers for different functionalities

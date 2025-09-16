@@ -4,6 +4,8 @@ from fastapi import APIRouter, HTTPException, Depends
 from app.models.incident import Incident
 from app.services.incident_service import create_incident, fetch_incidents, fetch_incident_by_id, fetch_nearby_incidents
 from app.services.auth_service import get_current_user
+import os
+import requests
 
 router = APIRouter()
 
@@ -42,3 +44,20 @@ async def get_nearby_incidents(lat: float, lng: float):
     """
     incidents = await fetch_nearby_incidents(lat, lng)
     return {"incidents": incidents}
+
+GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
+
+@router.get("/search-location/")
+async def search_location(query: str):
+    """
+    Fetch location suggestions from Google Maps API based on user query.
+    """
+    url = f"https://maps.googleapis.com/maps/api/place/autocomplete/json?input={query}&key={GOOGLE_MAPS_API_KEY}"
+    
+    response = requests.get(url)
+    data = response.json()
+    
+    if response.status_code != 200:
+        raise HTTPException(status_code=response.status_code, detail="Error fetching location data")
+    
+    return data
