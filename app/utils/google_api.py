@@ -8,7 +8,7 @@ from app.config import GOOGLE_MAPS_API_KEY
 async def get_directions(start: str, end: str, mode=str, alternatives=True):
     """
     Call the Google Directions API to get route information.
-    Returns the JSON response from the API.
+    Returns only the coordinates of the top route.
     """
     url = "https://maps.googleapis.com/maps/api/directions/json"
     params = {
@@ -16,7 +16,7 @@ async def get_directions(start: str, end: str, mode=str, alternatives=True):
         "destination": end,
         "mode": mode,
         "alternatives": alternatives,
-        "key": GOOGLE_MAPS_API_KEY  # Make sure this is set correctly
+        "key": "AIzaSyDf34ue6DB4ukLmPqY09YJsZ4FXW_vs98Y"
     }
     
     try:
@@ -28,44 +28,17 @@ async def get_directions(start: str, end: str, mode=str, alternatives=True):
             if data["status"] != "OK":
                 return {"error": data["status"]}
 
-            result = []
-            for i, route in enumerate(data.get("routes", [])):
-                route_details = {
-                    "route_number": i + 1,
-                    "summary": route.get("summary", "No summary"),
-                    "legs": []
-                }
-
-                for j, leg in enumerate(route.get("legs", [])):
-                    leg_details = {
-                        "leg_number": j + 1,
-                        "start_address": leg["start_address"],
-                        "end_address": leg["end_address"],
-                        "distance": leg["distance"]["text"],
-                        "duration": leg["duration"]["text"],
-                        "steps": []
-                    }
-
+            # Extract coordinates from the first route
+            if data.get("routes"):
+                top_route = data["routes"][0]
+                coordinates = []
+                for leg in top_route.get("legs", []):
                     for step in leg.get("steps", []):
-                        instruction = step["html_instructions"]
-                        instruction = instruction.replace("<b>", "").replace("</b>", "").replace("<wbr/>", "")
-                        instruction = instruction.replace('<div style="font-size:0.9em">', " ").replace('</div>', "")
+                        coordinates.append(step["end_location"])  # Collect end locations
 
-                        step_data = {
-                            "instruction": instruction,
-                            "distance": step["distance"]["text"],
-                            "duration": step["duration"]["text"],
-                            "start_location": step["start_location"],
-                            "end_location": step["end_location"]
-                        }
-                        
-                        leg_details["steps"].append(step_data)
+                return coordinates  # Return only the coordinates
 
-                    route_details["legs"].append(leg_details)
-
-                result.append(route_details)
-
-            return result  # Return the structured result
+            return []  # Return empty if no routes found
 
         else:
             return {"error": "Failed to fetch directions"}
