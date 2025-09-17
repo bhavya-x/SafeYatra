@@ -8,7 +8,7 @@ from app.config import GOOGLE_MAPS_API_KEY
 async def get_directions(start: str, end: str, mode=str, alternatives=True):
     """
     Call the Google Directions API to get route information.
-    Returns a list of lists containing (latitude, longitude) for all points in the route's legs.
+    Returns the polyline string of the top route.
     """
     url = "https://maps.googleapis.com/maps/api/directions/json"
     params = {
@@ -16,7 +16,7 @@ async def get_directions(start: str, end: str, mode=str, alternatives=True):
         "destination": end,
         "mode": mode,
         "alternatives": alternatives,
-        "key": "AIzaSyDf34ue6DB4ukLmPqY09YJsZ4FXW_vs98Y"
+        "key": GOOGLE_MAPS_API_KEY
     }
     
     try:
@@ -28,27 +28,62 @@ async def get_directions(start: str, end: str, mode=str, alternatives=True):
             if data["status"] != "OK":
                 return {"error": data["status"]}
 
-            # Extract latlng from all legs of the first route
+            # Extract polyline from the first route
             if data.get("routes"):
                 top_route = data["routes"][0]
-                legs = top_route.get("legs", [])
-                all_coords = []
-                for leg in legs:
-                    steps = leg.get("steps", [])
-                    for step in steps:
-                        start_location = step.get("start_location", {})
-                        end_location = step.get("end_location", {})
-                        all_coords.append((start_location.get("lat"), start_location.get("lng")))
-                        all_coords.append((end_location.get("lat"), end_location.get("lng")))
-                return all_coords  # Return all coordinates as a list of tuples
+                polyline = top_route.get("overview_polyline", {}).get("points", "")
+                return polyline  # Return the polyline string
 
-            return []  # Return empty if no routes found
+            return ""  # Return empty if no routes found
 
         else:
             return {"error": "Failed to fetch directions"}
 
     except httpx.RequestError as exc:
         return {"error": f"An error occurred while requesting directions: {str(exc)}"}
+
+def decode_polyline(encoded):
+    """
+    Decodes a Google Maps encoded polyline into a list of (latitude, longitude) tuples.
+    This method handles decoding correctly, keeping more detailed points.
+    """
+    polyline = []
+    index = 0
+    lat = 0
+    lng = 0
+    length = len(encoded)
+    
+    while index < length:
+        # Decode latitude
+        shift = 0
+        result = 0
+        while True:
+            byte = ord(encoded[index]) - 63
+            index += 1
+            result |= (byte & 0x1f) << shift
+            shift += 5
+            if byte < 0x20:
+                break
+        delta_lat = (result & 1) != 0 and ~(result >> 1) or (result >> 1)
+        lat += delta_lat
+
+        # Decode longitude
+        shift = 0
+        result = 0
+        while True:
+            byte = ord(encoded[index]) - 63
+            index += 1
+            result |= (byte & 0x1f) << shift
+            shift += 5
+            if byte < 0x20:
+                break
+        delta_lng = (result & 1) != 0 and ~(result >> 1) or (result >> 1)
+        lng += delta_lng
+        
+        # Append the decoded lat/lng as a tuple
+        polyline.append((lat / 1E5, lng / 1E5))
+
+    return polyline
 
 def get_current_location():
     """

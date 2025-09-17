@@ -1,7 +1,7 @@
 # Business logic for route ranking using ML and external API calls
 # Handles safe route recommendation and emergency/SOS features
 from app.models.route import RouteRequest
-from app.utils.google_api import get_directions
+from app.utils.google_api import get_directions, decode_polyline
 import os
 from twilio.rest import Client  # Import Twilio client
 from app.services.user_service import get_user_by_id
@@ -13,13 +13,9 @@ async def get_safe_routes(request: RouteRequest):
     """
     # Get routes from Google Maps (passing the extracted start and end from the request)
     directions = await get_directions(request.start, request.end, request.mode)
+    decoded_coordinates = decode_polyline(directions)
 
-    # Process the directions to return a suitable response
-    if isinstance(directions, list) and directions:
-        return {
-            "route_coordinates": directions
-        }
-    return {"error": "Failed to retrieve valid directions"}
+    return {"Polyline_String": directions, "route_Coordinates": decoded_coordinates}
 
 async def get_nearest_emergency(lat: float, lng: float):
     """
