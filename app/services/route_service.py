@@ -13,8 +13,13 @@ async def get_safe_routes(request: RouteRequest):
     """
     # Get routes from Google Maps (passing the extracted start and end from the request)
     directions = await get_directions(request.start, request.end, request.mode)
- 
-    return {"directions": directions}
+
+    # Process the directions to return a suitable response
+    if isinstance(directions, list) and directions:
+        return {
+            "route_coordinates": directions
+        }
+    return {"error": "Failed to retrieve valid directions"}
 
 async def get_nearest_emergency(lat: float, lng: float):
     """
