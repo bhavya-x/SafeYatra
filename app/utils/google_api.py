@@ -8,7 +8,8 @@ from app.config import GOOGLE_MAPS_API_KEY
 async def get_directions(start: str, end: str, mode=str, alternatives=True):
     """
     Call the Google Directions API to get route information.
-    Returns the polyline string of the top route.
+    Returns a list of dictionaries containing the top 3 routes with their polyline strings, ranks, times, and distances.
+
     """
     url = "https://maps.googleapis.com/maps/api/directions/json"
     params = {
@@ -16,7 +17,7 @@ async def get_directions(start: str, end: str, mode=str, alternatives=True):
         "destination": end,
         "mode": mode,
         "alternatives": alternatives,
-        "key": GOOGLE_MAPS_API_KEY
+        "key": "AIzaSyDf34ue6DB4ukLmPqY09YJsZ4FXW_vs98Y"
     }
     
     try:
@@ -28,11 +29,22 @@ async def get_directions(start: str, end: str, mode=str, alternatives=True):
             if data["status"] != "OK":
                 return {"error": data["status"]}
 
-            # Extract polyline from the first route
+            # Extract polylines from the top 3 routes
             if data.get("routes"):
-                top_route = data["routes"][0]
-                polyline = top_route.get("overview_polyline", {}).get("points", "")
-                return polyline  # Return the polyline string
+                top_routes = []
+                for route in data["routes"][:3]:  # Get top 3 routes
+                    polyline = route.get("overview_polyline", {}).get("points", "")
+                    rank = route.get("rank", None)
+                    duration = route.get("legs", [{}])[0].get("duration", {}).get("text", "")
+                    distance = route.get("legs", [{}])[0].get("distance", {}).get("text", "")
+                    top_routes.append({
+                        "polyline": polyline,
+                        "rank": rank,
+                        "duration": duration,
+                        "distance": distance
+                    })
+                return top_routes  # Return the list of top 3 routes
+
 
             return ""  # Return empty if no routes found
 

@@ -9,10 +9,12 @@ async def safe_route_route(request: RouteRequest):
     """
     Return top safe routes based on start, end, and travel mode. No authentication required.
     """
-    routes = await get_safe_routes(request)
+    routes = await get_safe_routes(request)  # This now returns a list of dictionaries for the top 3 routes
+
     if not routes:
         raise HTTPException(status_code=404, detail="No safe routes found")
-    return routes
+    return {"routes": routes}  # Wrap the response in a dictionary for clarity
+
 
 @router.get("/emergency/nearest")
 async def nearest_emergency(lat: float, lng: float):
