@@ -19,7 +19,7 @@ async def get_safe_routes(request: RouteRequest):
 
     routes_response = {}
     for i, route in enumerate(directions, start=1):
-        routes_response[f"route{i}"] = {
+        routes_response[f"route_Coordinates{i}"] = {
             "polyline": route["polyline"],
             "coordinates": decoded_coordinates[i-1],
             "rank": route["rank"],
