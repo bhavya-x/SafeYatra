@@ -45,3 +45,11 @@ async def get_user_by_id(user_id: str):
         return None  # Return None if conversion fails
 
     return None  # User not found
+
+async def save_user_data(user: User):
+    """
+    Save user data to the users collection.
+    """
+    users_collection = await get_users_collection()
+    result = await users_collection.insert_one(user.dict())  # Save user data to the users collection
+    return str(result.inserted_id)

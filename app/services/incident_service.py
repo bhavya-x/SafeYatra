@@ -1,10 +1,10 @@
 # Business logic for incident operations (CRUD in MongoDB)
-# Handles incident operations (CRUD)
 from app.database.mongo import get_incidents_collection
-from bson import ObjectId  # Import ObjectId for MongoDB queries
-from app.utils.google_api import get_current_location  # Import the new function
+from bson import ObjectId
+from app.utils.google_api import get_current_location
+from app.models.incident import Incident  # Importing the Incident model
 
-async def create_incident(incident):
+async def create_incident(incident: Incident):
     """
     Insert a new incident into the incidents collection.
     Automatically fetches the user's current location.
@@ -20,27 +20,26 @@ async def create_incident(incident):
         'lat': lat,
         'lng': lng
     }
-    
-    result = await incidents_collection.insert_one(incident_data)
+
+    result = await incidents_collection.insert_one(incident_data)  # Store incident data in the incidents collection
     return str(result.inserted_id)
 
-async def fetch_incidents(lat: float = None, lng: float = None):
+async def save_incident_data(incident: Incident):
     """
-    Retrieve all incidents from the database and convert ObjectId to string.
-    If latitude and longitude are provided, fetch incidents nearby.
+    Save incident data to the incidents collection.
     """
     incidents_collection = await get_incidents_collection()
-    
-    if lat is not None and lng is not None:
-        # Fetch nearby incidents if location is provided
-        incidents = await fetch_nearby_incidents(lat, lng)
-    else:
-        incidents = await incidents_collection.find().to_list(100)
+    result = await incidents_collection.insert_one(incident.dict())  # Save incident data to the incidents collection
+    return str(result.inserted_id)
 
-    # Convert ObjectId to string for each incident
+async def fetch_incidents():
+    """
+    Retrieve all incidents from the incidents collection.
+    """
+    incidents_collection = await get_incidents_collection()
+    incidents = await incidents_collection.find().to_list(100)  # Fetch the first 100 incidents
     for incident in incidents:
-        incident["_id"] = str(incident["_id"])
-
+        incident["_id"] = str(incident["_id"])  # Convert ObjectId to string for JSON serialization
     return incidents
 
 async def fetch_incident_by_id(incident_id: str):
@@ -61,7 +60,6 @@ async def fetch_incident_by_id(incident_id: str):
         return None  # Return None if conversion fails
 
     return None  # Return None if no incident is found
-
 
 async def fetch_nearby_incidents(lat: float, lng: float):
     """

@@ -1,5 +1,4 @@
 # MongoDB connection setup using Motor
-# MongoDB connection setup using Motor (async driver)
 import motor.motor_asyncio
 from app.config import MONGODB_URL
 
@@ -13,3 +12,11 @@ async def get_users_collection():
 async def get_incidents_collection():
     """Return the incidents collection."""
     return db["incidents"]
+
+async def get_clustered_collection():
+    """Return the clustered collection."""
+    return db["clustered"]  # Replace "clustered" with the actual collection name if different
+
+async def get_crimes_collection():
+    """Return the crimes collection."""
+    return db["crimes"]
