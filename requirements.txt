@@ -11,3 +11,6 @@ passlib[bcrypt]
 httpx
 twilio
 python-multipart
+pandas
+shapely
+geopy
