@@ -1,32 +1,63 @@
 # Business logic for route ranking using ML and external API calls
 # Handles safe route recommendation and emergency/SOS features
 from app.models.route import RouteRequest
-from app.utils.google_api import get_directions, decode_polyline
+from app.utils.google_api import get_directions, decode_polyline, get_directions_for_Krish
 import os
 from twilio.rest import Client  # Import Twilio client
 from app.services.user_service import get_user_by_id
+from app.services.model_service import calculate_route_safety
+import json
+
+import json
 
 async def get_safe_routes(request: RouteRequest):
-    """
-    Call Google Directions API to fetch routes, then rank them using an ML model.
-    Here, we return dummy data for demonstration.
-    """
-    # Get routes from Google Maps (passing the extracted start and end from the request)
+    # Fetch directions for the requested start and end points
     directions = await get_directions(request.start, request.end, request.mode)
-    decoded_coordinates = [decode_polyline(route["polyline"]) for route in directions]  # Decode each route's polyline
+    
+    # Decode the polylines from the directions into coordinates
+    decoded_coordinates = [decode_polyline(route["polyline"]) for route in directions]
 
+    # Fetch Krish's specific location directions
+    krish_ke_location = await get_directions_for_Krish(request)
+    
+    # Calculate safety scores for the routes
+    scorer = calculate_route_safety(krish_ke_location, 14, "male")
 
+    # Debugging scorer structure for verification
+    print(f"Scorer type: {type(scorer)}")
+    print(f"Scorer value: {scorer}")
 
+    # Handle `scorer` if it's a JSON string or list of JSON strings
+    if isinstance(scorer, str):
+        scorer = json.loads(scorer)  # Convert JSON string to Python list of dictionaries
+    elif isinstance(scorer, list) and isinstance(scorer[0], str):
+        scorer = [json.loads(score) for score in scorer]  # Convert each JSON string in the list
+
+    # Ensure scorer is now a list of dictionaries
+    if not isinstance(scorer, list) or not all(isinstance(score, dict) for score in scorer):
+        raise ValueError("Scorer must be a list of dictionaries after processing.")
+
+    # Prepare the response object
     routes_response = {}
-    for i, route in enumerate(directions, start=1):
-        routes_response[f"route_Coordinates{i}"] = {
-            "polyline": route["polyline"],
-            "coordinates": decoded_coordinates[i-1],
-            "rank": route["rank"],
-            "time": route["duration"],
-            "distance": route["distance"],
-            "safety_score": None  # Placeholder for safety score
-        }
+    for route, score in zip(directions, scorer):
+        try:
+            rank = score["rank"]
+            safety_score = score["safety_score"]
+
+            # Create a response entry for each route
+            routes_response[f"route_Coordinates{rank}"] = {
+                "polyline": route.get("polyline", ""),
+                "coordinates": decoded_coordinates[directions.index(route)],
+                "rank": rank,
+                "time": route.get("duration", ""),
+                "distance": route.get("distance", ""),
+                "safety_score": safety_score
+            }
+        except KeyError as e:
+            print(f"KeyError: Missing expected key in score: {e}")
+            raise ValueError("Scorer does not have the required keys: 'rank' and 'safety_score'.")
+
+    # Return the compiled routes as a dictionary
     return {"routes": routes_response}
 
 

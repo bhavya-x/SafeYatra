@@ -4,20 +4,25 @@ import requests
 import httpx
 import json
 from app.config import GOOGLE_MAPS_API_KEY
+from app.models.route import RouteRequest
 
-async def get_directions(start: str, end: str, mode=str, alternatives=True):
+async def get_directions(start: str, end: str, mode: str = "driving", alternatives: bool = True):
+
     """
     Call the Google Directions API to get route information.
-    Returns a list of dictionaries containing the top 3 routes with their polyline strings, ranks, times, and distances.
+    Returns a list of dictionaries containing the top routes with their polyline strings, ranks, times, and distances.
+
 
     """
     url = "https://maps.googleapis.com/maps/api/directions/json"
-    params = {
+    params: dict = {
+
         "origin": start,
         "destination": end,
         "mode": mode,
         "alternatives": alternatives,
         "key": "AIzaSyDf34ue6DB4ukLmPqY09YJsZ4FXW_vs98Y"
+
     }
     
     try:
@@ -29,10 +34,12 @@ async def get_directions(start: str, end: str, mode=str, alternatives=True):
             if data["status"] != "OK":
                 return {"error": data["status"]}
 
-            # Extract polylines from the top 3 routes
+            # Extract polylines from the routes
+
             if data.get("routes"):
                 top_routes = []
-                for route in data["routes"][:3]:  # Get top 3 routes
+                for route in data["routes"]:  # Get all routes
+
                     polyline = route.get("overview_polyline", {}).get("points", "")
                     rank = route.get("rank", None)
                     duration = route.get("legs", [{}])[0].get("duration", {}).get("text", "")
@@ -53,6 +60,87 @@ async def get_directions(start: str, end: str, mode=str, alternatives=True):
 
     except httpx.RequestError as exc:
         return {"error": f"An error occurred while requesting directions: {str(exc)}"}
+
+async def get_directions_for_Krish(request: RouteRequest):
+    """
+    Call Google Directions API to fetch routes, then return the results in a structured format.
+    """
+    try:
+        # Construct the API request URL
+        api_key = "AIzaSyDf34ue6DB4ukLmPqY09YJsZ4FXW_vs98Y"  # Replace with your actual API key
+        url = (
+            f"https://maps.googleapis.com/maps/api/directions/json"
+            f"?origin={request.start}&destination={request.end}"
+            f"&mode={request.mode}&alternatives=true&key={api_key}"
+        )
+        
+        # Make the API request
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url)
+
+        # Parse the JSON response
+        directions = response.json()
+
+        # Debugging: Print the raw response from the API
+        # print("Raw directions response:", directions)
+
+        # Initialize the final response
+        routes_response = []
+
+        # Check if routes are present in the API response
+        if "routes" in directions and directions["routes"]:
+            for i, route in enumerate(directions["routes"], start=1):
+                # Initialize a dictionary for the route
+                route_details = {
+                    "route_number": i,
+                    "legs": []
+                }
+
+                # Process each leg in the route
+                for leg in route["legs"]:
+                    leg_details = {
+                        "start_location": {
+                            "address": leg["start_address"],
+                            "lat": leg["start_location"]["lat"],
+                            "lng": leg["start_location"]["lng"]
+                        },
+                        "end_location": {
+                            "address": leg["end_address"],
+                            "lat": leg["end_location"]["lat"],
+                            "lng": leg["end_location"]["lng"]
+                        },
+                        "steps_count": len(leg["steps"]),
+                        "steps": []
+                    }
+
+                    # Process each step in the leg
+                    for step in leg["steps"]:
+                        step_details = {
+                            "instruction": step["html_instructions"],
+                            "distance": step["distance"]["text"],
+                            "duration": step["duration"]["text"],
+                            "start_location": {
+                                "lat": step["start_location"]["lat"],
+                                "lng": step["start_location"]["lng"]
+                            },
+                            "end_location": {
+                                "lat": step["end_location"]["lat"],
+                                "lng": step["end_location"]["lng"]
+                            }
+                        }
+                        leg_details["steps"].append(step_details)
+
+                    # Add the leg details to the route
+                    route_details["legs"].append(leg_details)
+
+                # Add the route details to the response
+                routes_response.append(route_details)
+        # print(routes_response)
+        return routes_response
+
+    except Exception as e:
+        print(f"Error getting directions: {str(e)}")
+        return {"error": "Failed to fetch directions", "details": str(e)}
 
 def decode_polyline(encoded):
     """

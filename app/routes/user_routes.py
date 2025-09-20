@@ -9,14 +9,15 @@ router = APIRouter()
 # Use HTTPBearer for simple Bearer token authentication
 security = HTTPBearer()
 
-@router.put("/users/{user_id}")
-async def update_user_route(
+@router.put("/users/{user_id}/update")
+async def update_user_route_no_auth(
     user_id: str,
     user_data: User
 ):
     """
     Update user details by user_id. No authentication required.
     """
+
     # Update the user data
     success = await update_user(user_id, user_data)
     if not success:
@@ -24,8 +25,8 @@ async def update_user_route(
 
     return {"detail": "User updated successfully"}
 
-@router.put("/users/{user_id}")
-async def update_user_route(
+@router.put("/users/{user_id}/update/auth")
+async def update_user_route_with_auth(
     user_id: str,
     user_data: User,
     credentials: HTTPAuthorizationCredentials = Depends(security)
@@ -33,6 +34,7 @@ async def update_user_route(
     """
     Update user details by user_id. Requires authentication.
     """
+
     # Extract the token from the Authorization header
     token = credentials.credentials
 
