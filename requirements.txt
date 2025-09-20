@@ -10,3 +10,4 @@ pydantic[email]
 passlib[bcrypt]
 httpx
 twilio
+python-multipart
