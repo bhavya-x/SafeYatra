@@ -42,7 +42,7 @@ async def login_user(email: str, password: str):
     
     # Generate JWT token with user data
     token = create_access_token(data={"sub": user["email"]})
-    return {"access_token": token, "token_type": "bearer"}
+    return {"access_token": token, "token_type": "bearer", "user_id": str(user["_id"])}  # Return token and user ID
 
 async def get_current_user(token: str):
     """

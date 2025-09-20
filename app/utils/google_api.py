@@ -8,7 +8,8 @@ from app.config import GOOGLE_MAPS_API_KEY
 async def get_directions(start: str, end: str, mode=str, alternatives=True):
     """
     Call the Google Directions API to get route information.
-    Returns the JSON response from the API.
+    Returns a list of dictionaries containing the top 3 routes with their polyline strings, ranks, times, and distances.
+
     """
     url = "https://maps.googleapis.com/maps/api/directions/json"
     params = {
@@ -16,7 +17,7 @@ async def get_directions(start: str, end: str, mode=str, alternatives=True):
         "destination": end,
         "mode": mode,
         "alternatives": alternatives,
-        "key": GOOGLE_MAPS_API_KEY  # Make sure this is set correctly
+        "key": "AIzaSyDf34ue6DB4ukLmPqY09YJsZ4FXW_vs98Y"
     }
     
     try:
@@ -28,50 +29,73 @@ async def get_directions(start: str, end: str, mode=str, alternatives=True):
             if data["status"] != "OK":
                 return {"error": data["status"]}
 
-            result = []
-            for i, route in enumerate(data.get("routes", [])):
-                route_details = {
-                    "route_number": i + 1,
-                    "summary": route.get("summary", "No summary"),
-                    "legs": []
-                }
+            # Extract polylines from the top 3 routes
+            if data.get("routes"):
+                top_routes = []
+                for route in data["routes"][:3]:  # Get top 3 routes
+                    polyline = route.get("overview_polyline", {}).get("points", "")
+                    rank = route.get("rank", None)
+                    duration = route.get("legs", [{}])[0].get("duration", {}).get("text", "")
+                    distance = route.get("legs", [{}])[0].get("distance", {}).get("text", "")
+                    top_routes.append({
+                        "polyline": polyline,
+                        "rank": rank,
+                        "duration": duration,
+                        "distance": distance
+                    })
+                return top_routes  # Return the list of top 3 routes
 
-                for j, leg in enumerate(route.get("legs", [])):
-                    leg_details = {
-                        "leg_number": j + 1,
-                        "start_address": leg["start_address"],
-                        "end_address": leg["end_address"],
-                        "distance": leg["distance"]["text"],
-                        "duration": leg["duration"]["text"],
-                        "steps": []
-                    }
 
-                    for step in leg.get("steps", []):
-                        instruction = step["html_instructions"]
-                        instruction = instruction.replace("<b>", "").replace("</b>", "").replace("<wbr/>", "")
-                        instruction = instruction.replace('<div style="font-size:0.9em">', " ").replace('</div>', "")
-
-                        step_data = {
-                            "instruction": instruction,
-                            "distance": step["distance"]["text"],
-                            "duration": step["duration"]["text"],
-                            "start_location": step["start_location"],
-                            "end_location": step["end_location"]
-                        }
-                        
-                        leg_details["steps"].append(step_data)
-
-                    route_details["legs"].append(leg_details)
-
-                result.append(route_details)
-
-            return result  # Return the structured result
+            return ""  # Return empty if no routes found
 
         else:
             return {"error": "Failed to fetch directions"}
 
     except httpx.RequestError as exc:
         return {"error": f"An error occurred while requesting directions: {str(exc)}"}
+
+def decode_polyline(encoded):
+    """
+    Decodes a Google Maps encoded polyline into a list of (latitude, longitude) tuples.
+    This method handles decoding correctly, keeping more detailed points.
+    """
+    polyline = []
+    index = 0
+    lat = 0
+    lng = 0
+    length = len(encoded)
+    
+    while index < length:
+        # Decode latitude
+        shift = 0
+        result = 0
+        while True:
+            byte = ord(encoded[index]) - 63
+            index += 1
+            result |= (byte & 0x1f) << shift
+            shift += 5
+            if byte < 0x20:
+                break
+        delta_lat = (result & 1) != 0 and ~(result >> 1) or (result >> 1)
+        lat += delta_lat
+
+        # Decode longitude
+        shift = 0
+        result = 0
+        while True:
+            byte = ord(encoded[index]) - 63
+            index += 1
+            result |= (byte & 0x1f) << shift
+            shift += 5
+            if byte < 0x20:
+                break
+        delta_lng = (result & 1) != 0 and ~(result >> 1) or (result >> 1)
+        lng += delta_lng
+        
+        # Append the decoded lat/lng as a tuple
+        polyline.append((lat / 1E5, lng / 1E5))
+
+    return polyline
 
 def get_current_location():
     """

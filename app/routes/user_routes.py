@@ -35,20 +35,11 @@ async def get_user_route(
 @router.put("/users/{user_id}")
 async def update_user_route(
     user_id: str,
-    user_data: User,
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    user_data: User
 ):
     """
-    Update user details by user_id. Requires authentication.
+    Update user details by user_id. No authentication required.
     """
-    # Extract the token from the Authorization header
-    token = credentials.credentials
-
-    # Validate the token and get the current user
-    current_user = await get_current_user(token)
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-
     # Update the user data
     success = await update_user(user_id, user_data)
     if not success:
